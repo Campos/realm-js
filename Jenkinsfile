@@ -95,6 +95,7 @@ def doBuild(target, configuration) {
   }
 
   node(nodeSpec) {
+    getSourceArchive()
     sh """
       if [ ${target} = node-linux ]; then
         bash scripts/docker-test.sh node ${configuration}
