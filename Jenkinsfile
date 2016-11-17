@@ -1,0 +1,112 @@
+#!groovy
+import groovy.json.JsonOutput
+
+repoName = 'realm-js' // This is a global variable
+
+def getSourceArchive() {
+  getSourceArchiveForCommit(repoName, env.BRANCH_NAME)
+}
+
+def getSourceArchiveForCommit(repoName, branchName) {
+  checkout([
+      $class: 'GitSCM',
+      branches: [[name: branchName]],
+      browser: [$class: 'GithubWeb',
+      repoUrl: "git@github.com:realm/${repoName}.git"],
+      extensions: [
+          [$class: 'CleanCheckout'],
+          [$class: 'LocalBranch', localBranch: branchName],
+          [$class: 'WipeWorkspace'],
+          [$class: 'SubmoduleOption', recursiveSubmodules: true]
+      ],
+      gitTool: 'native git',
+      userRemoteConfigs: [[
+          credentialsId: 'realm-ci-ssh',
+          name: 'origin',
+          refspec: '+refs/tags/*:refs/remotes/origin/tags/* +refs/heads/*:refs/remotes/origin/*',
+          url: "git@github.com:realm/${repoName}.git"
+      ]]
+  ])
+}
+
+def readGitTag() {
+  sh "git describe --exact-match --tags HEAD | tail -n 1 > tag.txt 2>&1 || true"
+  def tag = readFile('tag.txt').trim()
+  return tag
+}
+
+def readGitSha() {
+  sh "git rev-parse HEAD | cut -b1-8 > sha.txt"
+  def sha = readFile('sha.txt').readLines().last().trim()
+  return sha
+}
+
+def getVersion(){
+  def dependencies = readProperties file: 'dependencies.list'
+  def gitTag = readGitTag()
+  def gitSha = readGitSha()
+  if (gitTag == "") {
+    return "${dependencies.VERSION}-g${gitSha}"
+  }
+  else {
+    return dependencies.VERSION
+  }
+}
+
+def setBuildName(newBuildName) {
+  currentBuild.displayName = "${currentBuild.displayName} - ${newBuildName}"
+}
+
+def gitTag
+def gitSha
+def dependencies
+def version
+
+stage('check') {
+  node('docker') {
+    getSourceArchive()
+
+    dependencies = readProperties file: 'dependencies.list'
+
+    gitTag = readGitTag()
+    gitSha = readGitSha()
+    version = getVersion()
+    echo "tag: ${gitTag}"
+    if (gitTag == "") {
+      echo "No tag given for this build"
+      setBuildName("${gitSha}")
+    } else {
+      if (gitTag != "v${dependencies.VERSION}") {
+        echo "Git tag '${gitTag}' does not match v${dependencies.VERSION}"
+      } else {
+        echo "Building release: '${gitTag}'"
+        setBuildName("Tag ${gitTag}")
+      }
+    }
+    echo "version: ${version}"
+  }
+}
+
+def configurations = ['Debug', 'Release']
+def targets = ['node', 'node-linux']
+
+def generateBuildJobs() {
+  def jobs = [:]
+  for (int i = 0; i < targets.length; i++) {
+    def targetName = targets[i];
+    for (int j = 0; j < configurations.length; j++) {
+      def configurationName = configurations[j];
+      
+      jobs["${targetName}_${configurationName}"] = {
+        node('docker') {
+          echo "Test ${targetName}: ${configurationName}"
+          step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "${targetName}_${configurationName}"]])
+        }
+      }
+  }
+  return jobs
+}
+
+stage('build') {
+  parallel(generateBuildJobs())
+}
