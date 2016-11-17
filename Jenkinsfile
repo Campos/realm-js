@@ -103,6 +103,7 @@ def generateBuildJobs() {
           step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "${targetName}_${configurationName}"]])
         }
       }
+    }
   }
   return jobs
 }
