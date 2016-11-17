@@ -87,16 +87,16 @@ stage('check') {
   }
 }
 
-def configurations = ['Debug', 'Release']
-def targets = ['node', 'node-linux']
 
-def generateBuildJobs() {
+stage('build') {
+  def configurations = ['Debug', 'Release']
+  def targets = ['node', 'node-linux']
   def jobs = [:]
   for (int i = 0; i < targets.length; i++) {
     def targetName = targets[i];
     for (int j = 0; j < configurations.length; j++) {
       def configurationName = configurations[j];
-      
+  
       jobs["${targetName}_${configurationName}"] = {
         node('docker') {
           echo "Test ${targetName}: ${configurationName}"
@@ -105,9 +105,5 @@ def generateBuildJobs() {
       }
     }
   }
-  return jobs
-}
-
-stage('build') {
-  parallel(generateBuildJobs())
+  parallel(jobs)
 }
