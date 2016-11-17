@@ -92,9 +92,9 @@ stage('build') {
   def configurations = ['Debug', 'Release']
   def targets = ['node', 'node-linux']
   def jobs = [:]
-  for (int i = 0; i < targets.length; i++) {
+  for (int i = 0; i < targets.size(); i++) {
     def targetName = targets[i];
-    for (int j = 0; j < configurations.length; j++) {
+    for (int j = 0; j < configurations.size(); j++) {
       def configurationName = configurations[j];
   
       jobs["${targetName}_${configurationName}"] = {
