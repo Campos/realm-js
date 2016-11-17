@@ -85,10 +85,24 @@ stage('check') {
   }
 }
 
+
 def doBuild(target, configuration) {
-  node('docker') {
-    echo "Test ${target}: ${configuration}"
-    step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "${target}_${configuration}"]])
+  def nodeSpec = "docker"
+  if (target == "react-tests-android") {
+    nodeSpec = "FastLinux"
+  } else if (target == "macos") {
+    nodeSpec = 'osx_vegas'
+  }
+
+  node(nodeSpec) {
+    sh """
+      if [ ${target} = node-linux ]; then
+        bash scripts/docker-test.sh node ${configuration}
+      else
+        bash scripts/test.sh ${target} ${configuration}
+      fi
+    """
+    //step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "${target}_${configuration}"]])
   }
 }
 
