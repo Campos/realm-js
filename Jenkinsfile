@@ -81,31 +81,41 @@ stage('check') {
   }
 }
 
+def getNodeSpec(target) {
+  if (target == "react-tests-android") {
+    return "FastLinux"
+  } else if (target == "node-linux") {
+    return 'docker'
+  }
+  return 'osx_vegas'
+}
 
 def doBuild(target, configuration) {
-  def nodeSpec = "docker"
-  if (target == "react-tests-android") {
-    nodeSpec = "FastLinux"
-  } else if (target == "macos") {
-    nodeSpec = 'osx_vegas'
-  }
-
-  node(nodeSpec) {
+  node(getNodeSpec(target)) {
     getSourceArchive()
-    sh """
-      if [ ${target} = node-linux ]; then
-        bash scripts/docker-test.sh node ${configuration}
-      else
-        bash scripts/test.sh ${target} ${configuration}
-      fi
-    """
+    if(target == 'node-linux') {
+      sh "bash scripts/docker-test.sh node ${configuration}"
+    } else {
+      sh "bash scripts/test.sh ${target} ${configuration}"
+    }
     //step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "${target}_${configuration}"]])
   }
 }
 
 stage('build') {
   def configurations = ['Debug', 'Release']
-  def targets = ['node', 'node-linux']
+  def targets = [
+    'node',
+    'node-linux',
+    'realmjs',
+    'react-tests',
+    'react-tests-android',
+    'react-example',
+    'object-store',
+    'jsdoc',
+    'eslint',
+    'test-runners'
+  ]
   def jobs = [:]
   for (int i = 0; i < targets.size(); i++) {
     def targetName = targets[i];
