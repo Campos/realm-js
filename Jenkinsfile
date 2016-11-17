@@ -3,11 +3,7 @@ import groovy.json.JsonOutput
 
 repoName = 'realm-js' // This is a global variable
 
-def getSourceArchive() {
-  getSourceArchiveForCommit(repoName, env.BRANCH_NAME)
-}
-
-def getSourceArchiveForCommit(repoName, branchName) {
+def getSourceArchive(repoName) {
   checkout([
       $class: 'GitSCM',
       browser: [$class: 'GithubWeb', repoUrl: "git@github.com:realm/${repoName}.git"],
