@@ -64,6 +64,7 @@ def version
 
 stage('check') {
   node('docker') {
+    sh "env"
     getSourceArchive()
 
     dependencies = readProperties file: 'dependencies.list'
@@ -87,6 +88,12 @@ stage('check') {
   }
 }
 
+def doBuild(target, configuration) {
+  node('docker') {
+    echo "Test ${target}: ${configuration}"
+    step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "${target}_${configuration}"]])
+  }
+}
 
 stage('build') {
   def configurations = ['Debug', 'Release']
@@ -98,10 +105,7 @@ stage('build') {
       def configurationName = configurations[j];
   
       jobs["${targetName}_${configurationName}"] = {
-        node('docker') {
-          echo "Test ${targetName}: ${configurationName}"
-          step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "${targetName}_${configurationName}"]])
-        }
+        doBuild(targetName, configurationName)
       }
     }
   }
