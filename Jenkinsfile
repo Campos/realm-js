@@ -4,7 +4,13 @@ import groovy.json.JsonOutput
 repoName = 'realm-js' // This is a global variable
 
 def getSourceArchive() {
-  checkout([
+  checkout scm
+  sh 'git clean -ffdx -e .????????'
+  sshagent(['realm-ci-ssh']) {
+    sh 'git submodule update --init --recursive'
+  }
+  
+/*  checkout([
       $class: 'GitSCM',
       browser: [$class: 'GithubWeb', repoUrl: "git@github.com:realm/${repoName}.git"],
       extensions: [
@@ -20,6 +26,7 @@ def getSourceArchive() {
           url: "git@github.com:realm/${repoName}.git"
       ]]
   ])
+*/
 }
 
 def readGitTag() {
