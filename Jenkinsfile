@@ -1,7 +1,7 @@
 #!groovy
 import groovy.json.JsonOutput
 
-def repoName = 'realm-js' // This is a global variable
+repoName = 'realm-js' // This is a global variable
 
 def getSourceArchive() {
   checkout([
