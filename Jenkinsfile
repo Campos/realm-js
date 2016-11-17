@@ -10,12 +10,9 @@ def getSourceArchive() {
 def getSourceArchiveForCommit(repoName, branchName) {
   checkout([
       $class: 'GitSCM',
-      branches: [[name: branchName]],
       browser: [$class: 'GithubWeb',
-      repoUrl: "git@github.com:realm/${repoName}.git"],
       extensions: [
           [$class: 'CleanCheckout'],
-          [$class: 'LocalBranch', localBranch: branchName],
           [$class: 'WipeWorkspace'],
           [$class: 'SubmoduleOption', recursiveSubmodules: true]
       ],
